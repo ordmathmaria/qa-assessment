@@ -1,0 +1,20 @@
+{
+  "name": "qa-assessment",
+  "version": "1.0.0",
+  "description": "Thank you for your interest in the QA Engineer role at **Psynth**! This take-home assessment is designed to evaluate your hands-on skills in E2E test automation, CI/CD integration, test planning, and bug reporting.",
+  "main": "index.js",
+  "scripts": {
+    "test": "npx playwright test",
+    "test:ui": "npx playwright test --ui",
+    "test:headed": "npx playwright test --headed",
+    "test:debug": "npx playwright test --debug",
+    "test:report": "npx playwright show-report"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@playwright/test": "^1.59.1",
+    "@types/node": "^25.6.2"
+  }
+}

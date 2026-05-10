@@ -24,7 +24,7 @@
 1. TC-FE-001 - Standard user logs in with valid credentials - P0 - 5 min
 2. TC-FE-002 - User attempts to log in with invalid credentials - P1 - 4 min
 3. TC-FE-003 - Problem_user navigates inventory and adds products to cart - P1 - 8 min
-4. TC-EDGE-004 - Locked user (locked_out_user) attempts to log in - P0 - 5 min
+4. TC-FE-004 - Locked user (locked_out_user) attempts to log in - P0 - 5 min
 
 ### API / BACKEND (2 cases)
 
