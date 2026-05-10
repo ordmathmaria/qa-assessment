@@ -1,15 +1,83 @@
+**`.github/workflows/e2e-tests.yml`**
+
+```yaml
+name: E2E Tests
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  e2e-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      - name: Create .env file
+        run: |
+          echo "STANDARD_USER=standard_user" >> .env
+          echo "USER_PASSWORD=secret_sauce" >> .env
+          echo "LOCKED_USER=locked_out_user" >> .env
+          echo "PROBLEM_USER=problem_user" >> .env
+          echo "INVALID_USER=invalid_user" >> .env
+          echo "INVALID_PASSWORD=wrong_password" >> .env
+
+      - name: Run Playwright tests
+        run: npx playwright test
+
+      - name: Upload Playwright HTML Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+          if-no-files-found: ignore
+
+      - name: Upload Test Evidence (screenshots, videos, traces)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: test-results/
+          retention-days: 7
+          if-no-files-found: ignore
+```
+
+---
+
+**`RUNNING_TESTS_LOCALLY.md`**
+
+```markdown
 # QA Assessment - SauceDemo E2E Tests
 
 ## Cómo Ejecutar los Tests Localmente
 
-This project contains end-to-end tests for the **SauceDemo** application using **Playwright**.
+This project contains end-to-end tests for the SauceDemo application using Playwright.
 
 ---
 
 ## Prerequisites
 
-- **Node.js** >= 18 (LTS recommended)
-- **npm** >= 9
+- Node.js >= 18 (LTS recommended)
+- npm >= 9
 - Internet connection (tests run against https://www.saucedemo.com)
 
 ---
@@ -38,6 +106,32 @@ Or with system dependencies:
 npx playwright install --with-deps
 ```
 
+### 3. Create .env File
+
+Create a `.env` file in the root directory with the following environment variables:
+
+Since these are test cases for a demo application, the credentials are shared publicly.
+
+```
+BASE_URL=https://www.saucedemo.com
+USER_PASSWORD=secret_sauce
+INVALID_PASSWORD=wrong_password
+STANDARD_USER=standard_user
+LOCKED_USER=locked_out_user
+PROBLEM_USER=problem_user
+INVALID_USER=invalid_user
+
+```
+
+Important: Never commit `.env` to version control. It is already in `.gitignore`.
+
+**For local development:**
+- Create the `.env` file in the root directory
+- Add the variables above
+
+**For CI/CD (GitHub Actions):**
+- Store credentials as GitHub Secrets in Settings > Secrets and variables > Actions
+- The workflow automatically creates the `.env` file during test runs using these secrets
 ---
 
 ## Running Tests
@@ -48,7 +142,7 @@ npx playwright install --with-deps
 npm test
 ```
 
-**Output:**
+Output:
 - Terminal report with test results
 - HTML report generated in `playwright-report/`
 
@@ -147,72 +241,76 @@ tests/
 | `login.spec.ts` | 3 | TC-FE-001, TC-FE-002, TC-FE-004 |
 | `checkout.spec.ts` | 2 | TC-INT-001, TC-EDGE-002 |
 | `security.spec.ts` | 1 | TC-SEC-001 |
-| **TOTAL** | **6** | |
+| TOTAL | 6 | |
 
 ### Test Descriptions
 
 #### Authentication (3 tests)
-- **TC-FE-001:** Standard user logs in successfully
-- **TC-FE-002:** Invalid credentials show error message
-- **TC-FE-004:** Locked user cannot log in
+- TC-FE-001: Standard user logs in successfully
+- TC-FE-002: Invalid credentials show error message
+- TC-FE-004: Locked user cannot log in
 
 #### Purchase Flow (2 tests)
-- **TC-INT-001:** Complete purchase from login to confirmation
-- **TC-EDGE-002:** Checkout works with special characters
+- TC-INT-001: Complete purchase from login to confirmation
+- TC-EDGE-002: Checkout works with special characters
 
 #### Security (1 test)
-- **TC-SEC-001:** SQL injection payload is blocked
+- TC-SEC-001: SQL injection payload is blocked
 
 ---
 
 ## SauceDemo Credentials
 
-All credentials use password: `secret_sauce`
+All credentials are loaded from the `.env` file.
 
-| Username | Description | Used in Tests |
-|----------|-------------|---------------|
-| `standard_user` | Normal user - all features work | Yes - All tests |
-| `locked_out_user` | Account locked out | Yes - TC-FE-004 |
-| `problem_user` | Broken images & form behavior | No - Not in current tests |
-| `performance_glitch_user` | Slow responses | No - Not in current tests |
-| `error_user` | Triggers errors | No - Not in current tests |
-| `visual_user` | Visual inconsistencies | No - Not in current tests |
+Default credentials:
+
+| Username | Password |
+|----------|----------|
+| standard_user | secret_sauce |
+| locked_out_user | secret_sauce |
+| problem_user | secret_sauce |
+| invalid_user | wrong_password |
 
 ---
 
 ## Configuration
 
-### Playwright Config (`playwright.config.ts`)
+### Playwright Config (playwright.config.ts)
 
 Key settings:
 
 ```typescript
 {
-  testDir: './tests',                          // Test location
-  baseURL: 'https://www.saucedemo.com',       // Base URL
-  timeout: 30 * 1000,                         // Test timeout: 30s
-  reporter: ['html'],                         // HTML report
+  testDir: './tests',
+  baseURL: 'https://www.saucedemo.com',
+  timeout: 30 * 1000,
+  reporter: ['html'],
   use: {
-    screenshot: 'only-on-failure',            // Screenshots only on failure
-    video: 'retain-on-failure',               // Videos only on failure
-    trace: 'on-first-retry',                  // Trace on first retry
+    screenshot: 'only-on-failure',
+    video: 'retain-on-failure',
+    trace: 'on-first-retry',
   },
   projects: [
-    { name: 'chromium' }                      // Only Chromium browser
+    { name: 'chromium' }
   ]
 }
 ```
 
-### Environment Variables (Optional)
+### Test Data (tests/data/testData.ts)
 
-You can override test data via environment variables:
+All test credentials are loaded from environment variables defined in `.env`:
 
-```bash
-# Run with custom user
-STANDARD_USER=custom_user npm test
-
-# Or with multiple variables
-STANDARD_USER=user1 USER_PASSWORD=pass1 npm test
+```typescript
+export const testData = {
+  users: {
+    standardUser: {
+      username: process.env.STANDARD_USER || 'standard_user',
+      password: process.env.USER_PASSWORD || 'secret_sauce',
+    },
+    // ... more users
+  }
+}
 ```
 
 ---
@@ -221,14 +319,14 @@ STANDARD_USER=user1 USER_PASSWORD=pass1 npm test
 
 ### Problem: Tests fail with "Playwright not found"
 
-**Solution:**
+Solution:
 ```bash
 npx playwright install --with-deps
 ```
 
 ### Problem: "Error: Playwright Test did not expect test.describe()"
 
-**Solution:**
+Solution:
 ```bash
 rm -rf node_modules package-lock.json
 npm install
@@ -237,12 +335,12 @@ npx playwright install --with-deps
 
 ### Problem: Tests time out or are very slow
 
-**Possible causes:**
+Possible causes:
 - SauceDemo server is slow
 - Internet connection issue
 - Too many tests running in parallel
 
-**Solution:**
+Solution:
 ```bash
 # Run with single worker (slower but more stable)
 npx playwright test --workers=1
@@ -253,12 +351,16 @@ timeout: 60 * 1000  // 60 seconds
 
 ### Problem: "Connection refused" when running tests
 
-**Cause:** SauceDemo might be temporarily down
+Cause: SauceDemo might be temporarily down
 
-**Verify:**
+Verify:
 - Open https://www.saucedemo.com in your browser
 - If it loads, check your internet connection
 - Check firewall/proxy settings
+
+### Problem: .env file not found
+
+Make sure you created the `.env` file in the root directory with all required variables.
 
 ---
 
@@ -297,8 +399,8 @@ Opens interactive report with:
 ## CI/CD Integration
 
 Tests automatically run on:
-- **Push to `main` branch**
-- **Pull requests**
+- Push to main branch
+- Pull requests
 
 See `.github/workflows/e2e-tests.yml` for CI configuration.
 
@@ -309,14 +411,14 @@ After CI run completes:
 2. Click on workflow run
 3. Scroll to "Artifacts" section
 4. Download:
-   - `playwright-report` - HTML test report
-   - `test-results` - Screenshots, videos, traces
+   - playwright-report - HTML test report
+   - test-results - Screenshots, videos, traces
 
 ---
 
 ## Page Object Pattern
 
-Tests use the **Page Object Model** pattern for maintainability:
+Tests use the Page Object Model pattern for maintainability:
 
 ```typescript
 // GOOD: Using Page Objects
@@ -327,7 +429,7 @@ await loginPage.login('user', 'pass');
 await page.locator('[data-test="username"]').fill('user');
 ```
 
-### Benefits:
+Benefits:
 - Changes to selectors = 1 place to update
 - Readable and semantic test code
 - Easy to maintain and scale
@@ -347,9 +449,9 @@ await page.locator('[data-test="username"]').fill('user');
 - [Best Practices](https://testingwithplaywright.com/page-object-model/)
 
 ### Test Organization
-- `tests/e2e/` - Test specifications (what to test)
-- `tests/pages/` - Page objects (how to interact)
-- `tests/data/` - Test data (what data to use)
+- tests/e2e/ - Test specifications (what to test)
+- tests/pages/ - Page objects (how to interact)
+- tests/data/ - Test data (what data to use)
 
 ---
 
@@ -358,14 +460,14 @@ await page.locator('[data-test="username"]').fill('user');
 ### Test Independence
 
 Each test:
-- Has its own setup via `beforeEach()`
+- Has its own setup via beforeEach()
 - Can run independently (no test order dependency)
 - Cleans up after itself
 - Uses no hard-coded waits (only smart waits)
 
 ### Selectors Strategy
 
-All selectors use `data-test` attributes:
+All selectors use data-test attributes:
 ```typescript
 page.locator('[data-test="username"]')  // Stable
 page.locator('.user-input')             // Fragile (CSS can change)
@@ -379,7 +481,7 @@ await page.waitForURL('**/inventory.html')  // Wait for navigation
 await element.waitFor({ state: 'visible' }) // Wait for element
 ```
 
-No hard-coded sleeps like:
+No hard-coded sleeps:
 ```typescript
 await page.waitForTimeout(1000)  // AVOID
 ```
@@ -388,25 +490,27 @@ await page.waitForTimeout(1000)  // AVOID
 
 ## Next Steps
 
-1. **Install dependencies:**
+1. Install dependencies:
    ```bash
    npm install && npx playwright install --with-deps
    ```
 
-2. **Run tests locally:**
+2. Create .env file with credentials
+
+3. Run tests locally:
    ```bash
    npm test
    ```
 
-3. **View results:**
+4. View results:
    ```bash
    npm run test:report
    ```
 
-4. **Explore code:**
-   - Check `tests/e2e/` for test specs
-   - Check `tests/pages/` for Page Objects
-   - Check `TEST_PLAN.md` for test strategy
+5. Explore code:
+   - Check tests/e2e/ for test specs
+   - Check tests/pages/ for Page Objects
+   - Check TEST_PLAN.md for test strategy
 
 ---
 
@@ -414,27 +518,20 @@ await page.waitForTimeout(1000)  // AVOID
 
 If tests fail:
 
-1. Check `TEST_PLAN.md` for test description
-2. Check `BUG_REPORT.md` for known issues
-3. View HTML report: `npm run test:report`
+1. Check TEST_PLAN.md for test description
+2. Check BUG_REPORT.md for known issues
+3. View HTML report: npm run test:report
 4. Check console output for error messages
-5. Try running in UI mode: `npm run test:ui`
+5. Try running in UI mode: npm run test:ui
 
 ---
 
 ## Additional Documentation
 
-- **`TEST_PLAN.md`** - Test strategy, risk assessment, 12 test cases
-- **`BUG_REPORT.md`** - 2 detailed bug reports found during testing
-- **`.github/workflows/e2e-tests.yml`** - CI/CD workflow configuration
-- **`playwright.config.ts`** - Playwright configuration
-
----
-
-## Author
-
-QA Engineer Assessment - Psynth  
-Generated: May 2026
+- TEST_PLAN.md - Test strategy, risk assessment, 12 test cases
+- BUG_REPORT.md - 2 detailed bug reports found during testing
+- .github/workflows/e2e-tests.yml - CI/CD workflow configuration
+- playwright.config.ts - Playwright configuration
 
 ---
 
@@ -442,15 +539,16 @@ Generated: May 2026
 
 | Task | Command |
 |------|---------|
-| Install | `npm install && npx playwright install --with-deps` |
-| Run all tests | `npm test` |
-| Run with UI | `npm run test:ui` |
-| Run with browser visible | `npm run test:headed` |
-| Debug mode | `npm run test:debug` |
-| View report | `npm run test:report` |
-| Run single file | `npx playwright test tests/e2e/login.spec.ts` |
-| Run matching pattern | `npx playwright test --grep "Login"` |
+| Install | npm install && npx playwright install --with-deps |
+| Run all tests | npm test |
+| Run with UI | npm run test:ui |
+| Run with browser visible | npm run test:headed |
+| Debug mode | npm run test:debug |
+| View report | npm run test:report |
+| Run single file | npx playwright test tests/e2e/login.spec.ts |
+| Run matching pattern | npx playwright test --grep "Login" |
 
 ---
 
 End of README
+```

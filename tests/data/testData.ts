@@ -1,20 +1,20 @@
 export const testData = {
   users: {
     standardUser: {
-      username: process.env.STANDARD_USER || 'standard_user',
-      password: process.env.USER_PASSWORD || 'secret_sauce',
+      username: process.env.STANDARD_USER as string,
+      password: process.env.USER_PASSWORD as string,
     },
     lockedOutUser: {
-      username: process.env.LOCKED_USER || 'locked_out_user',
-      password: process.env.USER_PASSWORD || 'secret_sauce',
+      username: process.env.LOCKED_USER as string,
+      password: process.env.USER_PASSWORD as string,
     },
     problemUser: {
-      username: process.env.PROBLEM_USER || 'problem_user',
-      password: process.env.USER_PASSWORD || 'secret_sauce',
+      username: process.env.PROBLEM_USER as string,
+      password: process.env.USER_PASSWORD as string,
     },
     invalidUser: {
-      username: process.env.INVALID_USER || 'invalid_user',
-      password: process.env.INVALID_PASSWORD || 'wrong_password',
+      username: process.env.INVALID_USER as string,
+      password: process.env.INVALID_PASSWORD as string,
     },
   },
   checkout: {
