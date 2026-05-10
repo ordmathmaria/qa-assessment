@@ -32,12 +32,12 @@ jobs:
 
       - name: Create .env file
         run: |
-          echo "STANDARD_USER=standard_user" >> .env
-          echo "USER_PASSWORD=secret_sauce" >> .env
-          echo "LOCKED_USER=locked_out_user" >> .env
-          echo "PROBLEM_USER=problem_user" >> .env
-          echo "INVALID_USER=invalid_user" >> .env
-          echo "INVALID_PASSWORD=wrong_password" >> .env
+           echo "STANDARD_USER=${{ secrets.STANDARDUSER }}" >> .env
+           echo "USER_PASSWORD=${{ secrets.USERPASSWORD }}" >> .env
+           echo "LOCKED_USER=${{ secrets.LOCKEDUSER }}" >> .env
+           echo "PROBLEM_USER=${{ secrets.PROBLEMUSER }}" >> .env
+           echo "INVALID_USER=${{ secrets.INVALIDUSER }}" >> .env
+           echo "INVALID_PASSWORD=${{ secrets.INVALIDPASSWORD }}" >> .env
 
       - name: Run Playwright tests
         run: npx playwright test
